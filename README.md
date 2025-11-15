@@ -2,6 +2,8 @@
 
 Interactive Python CLI client for Terminal Chess with Unicode pieces, colored board rendering, and algebraic notation support.
 
+**Server Repository**: [TerminalChess-Server](https://github.com/Dsuwita/TerminalChess-Server)
+
 ## Features
 
 - **Interactive Prompts**: No command-line arguments needed - just run and play
@@ -79,7 +81,7 @@ port = 5000
 
 ## Server Protocol
 
-Communicates via TCP text protocol. See [server repository](https://github.com/yourusername/terminalChess-server) for protocol details.
+Communicates via TCP text protocol. See [TerminalChess-Server](https://github.com/Dsuwita/TerminalChess-Server) for protocol details.
 
 ## License
 
