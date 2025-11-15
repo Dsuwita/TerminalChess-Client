@@ -1,0 +1,3 @@
+# Minimal Python requirements for the client
+# The client uses only the standard library; colorama is optional for colored output.
+colorama>=0.4.6
