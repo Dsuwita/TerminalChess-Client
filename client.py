@@ -210,13 +210,15 @@ def main():
     print("  1. Quick match (auto-pair with waiting player)")
     print("  2. Create private room")
     print("  3. Join private room")
+    print("  4. Play against computer")
     
-    mode = input("Choose mode (1/2/3) [1]: ").strip()
+    mode = input("Choose mode (1/2/3/4) [1]: ").strip()
     if not mode:
         mode = "1"
     
     room_key = None
     create_room = None
+    play_computer = False
     
     if mode == "2":
         custom_key = input("Enter room key (leave empty for random): ").strip()
@@ -226,6 +228,8 @@ def main():
         if not room_key:
             print(Fore.RED + "Room key required!" + Style.RESET_ALL)
             sys.exit(1)
+    elif mode == "4":
+        play_computer = True
     
     print("\n" + Fore.GREEN + "Connecting to server..." + Style.RESET_ALL)
     
@@ -260,6 +264,9 @@ def main():
             sock_out.write("CREATE\n")
         else:
             sock_out.write(f"CREATE {create_room}\n")
+        sock_out.flush()
+    elif play_computer:
+        sock_out.write("COMPUTER\n")
         sock_out.flush()
     else:
         sock_out.write("FIND\n")
