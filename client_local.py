@@ -24,37 +24,46 @@ UNICODE_MAP = {
 }
 
 def parse_algebraic(move_str):
-    """Convert algebraic notation like Nc3 or e4 to server-compatible format.
-    Returns move string or None if unparseable."""
+    """Convert algebraic notation like Nc3 or Nbd7 to coordinate notation like b1c3 or b8d7.
+    Returns coordinate string or None if unparseable."""
     move_str = move_str.strip()
     if not move_str:
         return None
     
-    # Already coordinate notation (e2e4) - send as-is
+    # Already coordinate notation (e2e4)
     if len(move_str) >= 4 and move_str[0] in 'abcdefgh' and move_str[1] in '12345678' and move_str[2] in 'abcdefgh':
         return move_str
     
-    # Remove capture notation and check/mate symbols but keep the move structure
-    original = move_str
+    # Remove capture notation and check/mate symbols
     move_str = move_str.replace('x', '').replace('+', '').replace('#', '').replace('=Q', '').replace('=R', '').replace('=B', '').replace('=N', '')
     
-    # Pawn moves: e4 -> e2e4 (expand based on typical starting positions)
+    # Pawn moves: e4 or e2e4
     if len(move_str) == 2 and move_str[0] in 'abcdefgh' and move_str[1] in '12345678':
         file = move_str[0]
         dest_rank = move_str[1]
-        # Guess starting rank: 2 for white advances, 7 for black advances
-        if dest_rank in '34':
-            start_rank = '2'  # White pawn
-        elif dest_rank in '56':
-            start_rank = '7'  # Black pawn
-        else:
-            start_rank = '2'  # Default to white
+        start_rank = '2' if dest_rank in '34' else '7' if dest_rank in '56' else '2'
         return f"{file}{start_rank}{file}{dest_rank}"
     
-    # Piece moves: Send directly to server - it will resolve ambiguity
-    # Examples: Nc3, Nbd7, Nb1c3, etc.
-    # Just send the original cleaned move to the server
-    return move_str if move_str else None
+    # Piece moves: Nc3, Nbd7, Nb1d7, etc.
+    piece_chars = {'K': 'king', 'Q': 'queen', 'R': 'rook', 'B': 'bishop', 'N': 'knight'}
+    if move_str[0].upper() in piece_chars:
+        piece = move_str[0].upper()
+        rest = move_str[1:]
+        
+        # Extract destination (last 2 chars should be file+rank)
+        if len(rest) >= 2 and rest[-2] in 'abcdefgh' and rest[-1] in '12345678':
+            dest = rest[-2:]
+            disambig = rest[:-2] if len(rest) > 2 else ''
+            
+            # If we have full disambiguation (like b1 in Nb1c3)
+            if len(disambig) == 2 and disambig[0] in 'abcdefgh' and disambig[1] in '12345678':
+                return disambig + dest
+            
+            # Partial disambiguation or none - we can't determine source without board state
+            # For now, return None and let server handle or user use full notation
+            return None
+    
+    return None
 
 def render_board(ascii_lines, use_unicode=True, colorize=True, flip=False):
     """Render the BOARD block with optional unicode and colored squares.
@@ -102,12 +111,9 @@ def render_board(ascii_lines, use_unicode=True, colorize=True, flip=False):
                 symbol = UNICODE_MAP[piece]
             elif piece == '.':
                 symbol = ' '  # Empty space instead of dot
-            if colorize:
-                cell = f"{cell_bg}{fg} {symbol}{Style.RESET_ALL}"
-            else:
-                cell = f" {symbol}"
+            cell = f"{cell_bg}{fg} {symbol} {Style.RESET_ALL if colorize else ''}" if colorize else f" {symbol} "
             rendered_row.append(cell)
-        out_lines.append(rank + ''.join(rendered_row))
+        out_lines.append(rank + ' ' + ''.join(rendered_row))
     
     # Add file labels (reversed if flipped)
     if flip:
@@ -227,7 +233,7 @@ def main():
     
     print("\n" + Fore.GREEN + "Connecting to server..." + Style.RESET_ALL)
     
-    host = "209.38.75.155"
+    host = "localhost"
     port = 5000
     stop_event = threading.Event()
 
